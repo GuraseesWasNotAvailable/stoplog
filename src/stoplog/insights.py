@@ -333,6 +333,7 @@ def _fact_numbers(obj) -> list[float]:
 
 
 def number_is_supported(n: float, known: list[float]) -> bool:
+    n = float(n)  # int.is_integer() only exists from Python 3.12; Pi OS Bookworm ships 3.11
     if n.is_integer() and 1 <= n <= 5:  # "top 3", "2 machines"
         return True
     return any(abs(n - f) <= max(0.51, 0.015 * abs(f)) for f in known)
