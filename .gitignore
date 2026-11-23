@@ -1,0 +1,21 @@
+# secrets: never commit these
+.env
+*.env
+credentials*.json
+service-account*.json
+*-sa.json
+client_secret*.json
+
+# runtime state and data
+.stoplog/
+stoplog-data/
+inbox/
+capture-test.jpg
+
+# python
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+build/
+dist/

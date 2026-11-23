@@ -1,0 +1,20 @@
+[Unit]
+Description=stoplog: line stop sheets to a Google Sheet
+After=network-online.target time-sync.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+WorkingDirectory=@APP_DIR@
+# Settings come from @APP_DIR@/.env (read by stoplog itself).
+# The camera takes a photo every 10 minutes; frames where the sheet has not changed are not sent.
+# For phone photos dropped into the inbox only, remove "--capture --every 600".
+ExecStart=@APP_DIR@/.venv/bin/stoplog watch --capture --every 600
+Restart=always
+RestartSec=30
+Nice=5
+MemoryMax=400M
+
+[Install]
+WantedBy=multi-user.target

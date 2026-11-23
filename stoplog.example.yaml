@@ -1,0 +1,32 @@
+# Plant config. Copy to stoplog.yaml and edit. Every key is optional.
+
+shifts:
+  - {name: A, start: "06:00", end: "14:00"}
+  - {name: B, start: "14:00", end: "22:00"}
+  - {name: C, start: "22:00", end: "06:00"}
+
+# Equipment stops shorter than this are minor stops; longer ones are breakdowns,
+# whatever the operator ticked. One rule for every row.
+minor_stop_max_min: 10
+
+# How dates are written on the sheets: DD/MM/YYYY or MM/DD/YYYY
+date_format: DD/MM/YYYY
+
+# Optional: canonical names. Helps the reader and keeps the Log tidy.
+lines: [Line 1, Line 2, Line 3]
+machines: [Wrapper, Stamper, Cutter, Cartoner, Conveyor, Plodder]
+
+# Optional: your own cause vocabulary (replaces the defaults). Key = group name shown in
+# the Insights tab; list = other ways operators write it.
+reason_groups:
+  wrapper jam: [wrap jam, wrapping jam, wrapper choke, bar stuck in wrapper]
+  film jam: [film stuck, film jam at sealing jaw]
+  film break: [film tear, film cut]
+  sealing jaw fault: [jaw heater fault, sealing heater, jaw not heating]
+  stamper die jam: [die jam, bar stuck in die, stamper jam]
+  carton feed jam: [carton jam, cartoner jam]
+  conveyor belt fault: [belt slipping, belt jam, conveyor stuck]
+  no material: [film khatam, no film, material shortage, roll late]
+  sku changeover: [sku change, size change, product change]
+  cleaning: [cip, line cleaning, tea break and cleaning]
+  power cut: [power failure, power trip, eb cut]
