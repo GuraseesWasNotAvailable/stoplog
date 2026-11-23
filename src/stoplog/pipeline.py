@@ -123,6 +123,7 @@ class Pipeline:
             model=model,
             cache_dir=self.settings.state_dir,
             now=self.clock(),
+            effort=self.settings.insights_effort,
         )
         self.store.write_insights(grid)
         return facts

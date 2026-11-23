@@ -186,7 +186,10 @@ class PlantConfig:
 
 
 PROVIDERS = ("openai", "anthropic")
-DEFAULT_MODELS = {"openai": DEFAULT_MODEL, "anthropic": "claude-opus-5-5"}
+# Claude default is the small model: on the bundled sample, Haiku 5.5 at low effort read
+# 80/80 fields exactly. Step up (STOPLOG_MODEL=claude-sonnet-5-5, STOPLOG_EFFORT=medium)
+# if real handwriting reads worse.
+DEFAULT_MODELS = {"openai": DEFAULT_MODEL, "anthropic": "claude-haiku-5-5"}
 
 
 @dataclass
@@ -196,6 +199,8 @@ class Settings:
     anthropic_api_key: str | None = None
     model: str | None = None  # None -> the provider's default
     insights_model: str | None = None  # None -> same as `model`
+    effort: str = "low"  # reading the photo (Claude: low|medium|high|xhigh|max)
+    insights_effort: str = "low"  # writing the findings
     image_detail: str = "high"
     google_credentials: Path | None = None
     sheet_id: str | None = None
@@ -260,6 +265,8 @@ class Settings:
             anthropic_api_key=env.get("ANTHROPIC_API_KEY") or None,
             model=env.get("STOPLOG_MODEL") or None,
             insights_model=env.get("STOPLOG_INSIGHTS_MODEL") or None,
+            effort=(env.get("STOPLOG_EFFORT") or "low").lower(),
+            insights_effort=(env.get("STOPLOG_INSIGHTS_EFFORT") or "low").lower(),
             image_detail=env.get("STOPLOG_IMAGE_DETAIL") or "high",
             google_credentials=Path(creds) if creds else None,
             sheet_id=_sheet_id(env.get("STOPLOG_SHEET_ID")),

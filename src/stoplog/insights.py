@@ -355,7 +355,8 @@ def facts_digest(facts: dict) -> str:
     return hashlib.sha256(json.dumps(facts, sort_keys=True, default=str).encode()).hexdigest()
 
 
-def write_narrative(facts: dict, llm, model: str, cache_dir: Path | None = None) -> tuple[list[Insight], str]:
+def write_narrative(facts: dict, llm, model: str, cache_dir: Path | None = None,
+                    effort: str = "medium") -> tuple[list[Insight], str]:
     """Returns (findings, note). Never raises: insights tables are written even if this fails."""
     if facts["totals"]["stops"] < MIN_STOPS_FOR_NARRATIVE:
         return [], f"Findings appear once at least {MIN_STOPS_FOR_NARRATIVE} stops are logged."
@@ -376,7 +377,7 @@ def write_narrative(facts: dict, llm, model: str, cache_dir: Path | None = None)
             system=NARRATIVE_SYSTEM,
             text="FACTS:\n" + json.dumps(facts, indent=1, default=str),
             schema=Narrative,
-            effort="medium",
+            effort=effort,
         )
     except Exception as exc:
         return [], f"Written findings unavailable this update ({type(exc).__name__}). Tables are current."
@@ -512,8 +513,9 @@ def render_grid(facts: dict, insights: list[Insight], note: str, updated: dateti
 
 
 def build_insights(records: list[dict[str, str]], plant: PlantConfig, llm=None, model: str = "",
-                   cache_dir: Path | None = None, now: datetime | None = None) -> tuple[InsightsGrid, dict]:
+                   cache_dir: Path | None = None, now: datetime | None = None,
+                   effort: str = "medium") -> tuple[InsightsGrid, dict]:
     rows = parse_rows(records)
     facts = compute_facts(rows, plant)
-    insights, note = write_narrative(facts, llm, model, cache_dir) if rows else ([], "")
+    insights, note = write_narrative(facts, llm, model, cache_dir, effort) if rows else ([], "")
     return render_grid(facts, insights, note, now or datetime.now(), plant), facts

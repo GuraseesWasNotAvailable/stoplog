@@ -36,15 +36,19 @@ the count; duration_min is then the row's total minutes. Otherwise 1.
 - reason_as_written: verbatim, in the original language and script (Hindi, Tamil, \
 Telugu, Hinglish and English all occur).
 - reason_english: the reason in plain English, expanding shorthand ("b/d" = breakdown, \
-"c/o" = changeover). reason_group: a 2-4 word lowercase English cause label; reuse a known \
-group when it fits.
+"c/o" = changeover).
+- reason_group: a 2-4 word lowercase English label for the failure mode, i.e. what went \
+wrong ("sealing jaw heater fault", "film jam", "carton feed jam"), never just the machine. \
+Reuse a known group only if it is the same failure; a heater, motor or sensor fault is not \
+a jam. If none fits, write a new specific label.
 - category_as_written: the Type code exactly as written (e.g. "BD", "MS"), or null.
 - sheet_date: YYYY-MM-DD. Dates are written {date_format}. If the year is missing, use the \
 photo's year. sheet_date_as_written: the date exactly as written.
 - is_loss_sheet: false if the photo is not a production stop/loss record; then return no \
 stops.
-- unreadable: anything you could not read, plus whether part of the sheet is cut off, \
-blurred, in shadow or covered.
+- unreadable: only writing you could not read, and parts of the sheet that are cut off, \
+blurred, in shadow or covered. Not blank cells, totals, signatures or other observations; \
+put doubts about a single row in that row's `note`.
 """
 
 
@@ -83,5 +87,5 @@ class Extractor:
             text=build_user_prompt(plant, photo_name, image.taken_at),
             schema=ExtractedSheet,
             image_jpeg=image.jpeg,
-            effort="high",
+            effort=self.settings.effort,
         )

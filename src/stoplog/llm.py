@@ -103,8 +103,11 @@ class AnthropicLLM:
     provider = "anthropic"
 
     # Server-side refusal fallback: if a safety classifier declines, the API re-runs the
-    # request on a suitable fallback model inside the same call.
+    # request on a suitable fallback model inside the same call. Only some models take it
+    # (Haiku does not), so it is sent only for these.
     FALLBACK_BETA = "server-side-fallback-2026-07-01"
+    FALLBACK_MODELS = {"claude-fable-5-2", "claude-fable-5-1", "claude-opus-5-5", "claude-opus-5",
+                       "claude-sonnet-5-5"}
 
     def __init__(self, api_key: str, client=None):
         if client is None:
@@ -129,6 +132,7 @@ class AnthropicLLM:
                 }
             )
         content.append({"type": "text", "text": text})
+        extra = {"betas": [self.FALLBACK_BETA], "fallbacks": "default"} if model in self.FALLBACK_MODELS else {}
         try:
             resp = self.client.beta.messages.parse(
                 model=model,
@@ -137,8 +141,7 @@ class AnthropicLLM:
                 messages=[{"role": "user", "content": content}],
                 output_format=schema,
                 output_config={"effort": effort},
-                betas=[self.FALLBACK_BETA],
-                fallbacks="default",
+                **extra,
             )
         except (anthropic.AuthenticationError, anthropic.PermissionDeniedError, anthropic.NotFoundError) as exc:
             raise LLMError(f"Anthropic rejected the request: {exc}", retryable=False) from exc

@@ -26,7 +26,7 @@ def test_photo_to_rows_and_insights(settings, tmp_path):
     r = pipe.process(SAMPLE_PHOTO)
     assert (r.status, r.stops_read, r.stops_added, r.already_logged, r.needs_review) == ("logged", 14, 14, 0, 1)
     call = llm.calls[0]
-    assert call["image_jpeg"][:2] == b"\xff\xd8" and call["effort"] == "high"
+    assert call["image_jpeg"][:2] == b"\xff\xd8" and call["effort"] == "low"
     assert "Line Stop Log" in call["system"] and "B (14:00-22:00)" in call["text"]
     assert len(store.read_events()) == 14
 

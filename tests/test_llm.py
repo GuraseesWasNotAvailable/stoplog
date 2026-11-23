@@ -69,6 +69,14 @@ def test_anthropic_request_shape():
     assert "thinking" not in k and "temperature" not in k
 
 
+def test_haiku_gets_no_fallback_beta():
+    client, rec = anthropic_client(SimpleNamespace(stop_reason="end_turn", parsed_output=Narrative(insights=[])))
+    AnthropicLLM("k", client=client).structured(model="claude-haiku-5-5", system="s", text="t",
+                                                schema=Narrative, effort="low")
+    assert "betas" not in rec.kwargs and "fallbacks" not in rec.kwargs
+    assert rec.kwargs["output_config"] == {"effort": "low"}
+
+
 def test_anthropic_refusal_is_not_retried():
     client, _ = anthropic_client(SimpleNamespace(stop_reason="refusal", parsed_output=None,
                                                  stop_details=SimpleNamespace(category="cyber")))
@@ -81,7 +89,7 @@ def test_provider_selection():
     assert Settings(openai_api_key="a").resolved_provider() == "openai"
     assert Settings(anthropic_api_key="b").resolved_provider() == "anthropic"
     assert Settings(openai_api_key="a", anthropic_api_key="b").resolved_provider() == "openai"
-    assert Settings(provider="anthropic", openai_api_key="a", anthropic_api_key="b").extraction_model() == "claude-opus-5-5"
+    assert Settings(provider="anthropic", openai_api_key="a", anthropic_api_key="b").extraction_model() == "claude-haiku-5-5"
     assert Settings(openai_api_key="a").extraction_model() == "gpt-6.2-sol"
     assert Settings(openai_api_key="a", model="gpt-6.1-terra").narrative_model() == "gpt-6.1-terra"
     with pytest.raises(RuntimeError):
