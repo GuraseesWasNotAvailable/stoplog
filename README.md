@@ -84,6 +84,18 @@ Camera backends: `rpicam-still` (Pi camera), `fswebcam` (USB webcam), or any com
 
 The Pi needs the right time to date photos when a sheet has no date: keep network time on (`timedatectl`).
 
+## Windows laptop
+
+Same idea without a camera: photos dropped into a folder are read and logged.
+
+1. Put the non-secret settings in `stoplog.yaml` under `settings:` (`sheet_id`, `google_credentials_file`, `watch_dir`, `provider`, `model`, `effort`). See the top of [`stoplog.example.yaml`](stoplog.example.yaml).
+2. Store the key as a user environment variable, under a stoplog-only name so other tools (Claude Code among them) do not pick it up:
+   `[Environment]::SetEnvironmentVariable('STOPLOG_ANTHROPIC_API_KEY', '<key>', 'User')` (or `STOPLOG_OPENAI_API_KEY`).
+3. `.venv\Scripts\stoplog init`
+4. `powershell -ExecutionPolicy Bypass -File deploy\windows\install-task.ps1` runs it in the background from every logon, restarting on crashes, logging to `.stoplog\stoplog.log`.
+
+Stop it with `Stop-ScheduledTask -TaskName stoplog`; remove it with `Unregister-ScheduledTask -TaskName stoplog -Confirm:$false`.
+
 ## Configuration
 
 `.env` holds keys and paths (see [`config.example.env.txt`](config.example.env.txt)). `stoplog.yaml` holds the plant (see [`stoplog.example.yaml`](stoplog.example.yaml)):

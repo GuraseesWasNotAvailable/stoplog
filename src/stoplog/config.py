@@ -251,33 +251,47 @@ class Settings:
         env = os.environ
 
         path = config_path or env.get("STOPLOG_CONFIG") or "stoplog.yaml"
-        plant = PlantConfig()
+        data: dict = {}
         if Path(path).exists():
             with open(path, encoding="utf-8") as fh:
-                plant = PlantConfig.from_dict(yaml.safe_load(fh))
+                data = yaml.safe_load(fh) or {}
         elif config_path:
             raise FileNotFoundError(f"config file not found: {config_path}")
+        plant = PlantConfig.from_dict(data)
+        # Non-secret settings may live in the YAML under `settings:`; environment variables
+        # win. Keys only ever come from the environment.
+        ys = {str(k).lower(): v for k, v in (data.get("settings") or {}).items()}
 
-        creds = env.get("GOOGLE_CREDENTIALS_FILE") or env.get("GOOGLE_APPLICATION_CREDENTIALS")
+        def get(env_name: str, yaml_key: str, default=None):
+            value = env.get(env_name)
+            if value not in (None, ""):
+                return value
+            value = ys.get(yaml_key)
+            return default if value in (None, "") else str(value)
+
+        creds = (env.get("GOOGLE_CREDENTIALS_FILE") or env.get("GOOGLE_APPLICATION_CREDENTIALS")
+                 or ys.get("google_credentials_file"))
         return cls(
-            provider=(env.get("STOPLOG_PROVIDER") or "auto").lower(),
-            openai_api_key=env.get("OPENAI_API_KEY") or None,
-            anthropic_api_key=env.get("ANTHROPIC_API_KEY") or None,
-            model=env.get("STOPLOG_MODEL") or None,
-            insights_model=env.get("STOPLOG_INSIGHTS_MODEL") or None,
-            effort=(env.get("STOPLOG_EFFORT") or "low").lower(),
-            insights_effort=(env.get("STOPLOG_INSIGHTS_EFFORT") or "low").lower(),
-            image_detail=env.get("STOPLOG_IMAGE_DETAIL") or "high",
+            provider=get("STOPLOG_PROVIDER", "provider", "auto").lower(),
+            # STOPLOG_-prefixed names first: a machine-wide ANTHROPIC_API_KEY would also be
+            # picked up by other tools (Claude Code among them).
+            openai_api_key=env.get("STOPLOG_OPENAI_API_KEY") or env.get("OPENAI_API_KEY") or None,
+            anthropic_api_key=env.get("STOPLOG_ANTHROPIC_API_KEY") or env.get("ANTHROPIC_API_KEY") or None,
+            model=get("STOPLOG_MODEL", "model"),
+            insights_model=get("STOPLOG_INSIGHTS_MODEL", "insights_model"),
+            effort=get("STOPLOG_EFFORT", "effort", "low").lower(),
+            insights_effort=get("STOPLOG_INSIGHTS_EFFORT", "insights_effort", "low").lower(),
+            image_detail=get("STOPLOG_IMAGE_DETAIL", "image_detail", "high"),
             google_credentials=Path(creds) if creds else None,
-            sheet_id=_sheet_id(env.get("STOPLOG_SHEET_ID")),
-            store=(env.get("STOPLOG_STORE") or "gsheet").lower(),
-            csv_dir=Path(env.get("STOPLOG_CSV_DIR") or "stoplog-data"),
-            watch_dir=Path(env.get("STOPLOG_WATCH_DIR") or "inbox"),
-            state_dir=Path(env.get("STOPLOG_STATE_DIR") or ".stoplog"),
-            poll_seconds=float(env.get("STOPLOG_POLL_SECONDS") or 10),
-            settle_seconds=float(env.get("STOPLOG_SETTLE_SECONDS") or 5),
-            max_attempts=int(env.get("STOPLOG_MAX_ATTEMPTS") or 3),
-            narrative=(env.get("STOPLOG_NARRATIVE") or "1").lower() not in ("0", "false", "no", "off"),
+            sheet_id=_sheet_id(get("STOPLOG_SHEET_ID", "sheet_id")),
+            store=get("STOPLOG_STORE", "store", "gsheet").lower(),
+            csv_dir=Path(get("STOPLOG_CSV_DIR", "csv_dir", "stoplog-data")),
+            watch_dir=Path(get("STOPLOG_WATCH_DIR", "watch_dir", "inbox")),
+            state_dir=Path(get("STOPLOG_STATE_DIR", "state_dir", ".stoplog")),
+            poll_seconds=float(get("STOPLOG_POLL_SECONDS", "poll_seconds", 10)),
+            settle_seconds=float(get("STOPLOG_SETTLE_SECONDS", "settle_seconds", 5)),
+            max_attempts=int(get("STOPLOG_MAX_ATTEMPTS", "max_attempts", 3)),
+            narrative=str(get("STOPLOG_NARRATIVE", "narrative", "1")).lower() not in ("0", "false", "no", "off"),
             plant=plant,
         )
 

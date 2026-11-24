@@ -6,6 +6,9 @@ service-account*.json
 *-sa.json
 client_secret*.json
 
+# plant-specific config (sheet id, folders)
+stoplog.yaml
+
 # runtime state and data
 .stoplog/
 stoplog-data/

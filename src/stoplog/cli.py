@@ -212,6 +212,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--store", choices=["gsheet", "csv"], help="override STOPLOG_STORE")
     p.add_argument("--csv-dir", help="folder for the CSV store")
     p.add_argument("-v", "--verbose", action="store_true")
+    p.add_argument("--log-file", help="also write the log here (rotated at 1 MB)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("init", help="check keys and the sheet, create the tabs").set_defaults(fn=cmd_init)
@@ -259,7 +260,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
+    handlers: list[logging.Handler] = []
+    if args.log_file:  # for running without a console (pythonw, Task Scheduler, systemd)
+        from logging.handlers import RotatingFileHandler
+
+        Path(args.log_file).parent.mkdir(parents=True, exist_ok=True)
+        handlers.append(RotatingFileHandler(args.log_file, maxBytes=1_000_000, backupCount=3, encoding="utf-8"))
+    if sys.stderr is not None:
+        handlers.append(logging.StreamHandler())
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, handlers=handlers or None,
                         format="%(asctime)s %(levelname)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     for noisy in ("httpx", "httpx2", "openai", "anthropic", "urllib3", "google"):
         logging.getLogger(noisy).setLevel(logging.WARNING)

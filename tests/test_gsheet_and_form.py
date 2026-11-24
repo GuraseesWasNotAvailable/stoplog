@@ -134,3 +134,21 @@ def test_settings_load_from_env_and_yaml(tmp_path, monkeypatch):
     assert s.plant.minor_stop_max_min == 5 and list(s.plant.reason_groups) == ["wrapper jam"]
     with pytest.raises(FileNotFoundError):
         Settings.load(tmp_path / "missing.yaml", env_file=None)
+
+
+def test_settings_section_in_yaml_and_stoplog_key_names(tmp_path, monkeypatch):
+    cfg = tmp_path / "stoplog.yaml"
+    cfg.write_text("settings:\n  sheet_id: https://docs.google.com/spreadsheets/d/ABC/edit\n"
+                   "  watch_dir: C:/photos\n  provider: anthropic\n  model: claude-haiku-5-5\n"
+                   "  google_credentials_file: sa.json\n  poll_seconds: 15\n", encoding="utf-8")
+    for name in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "STOPLOG_MODEL", "STOPLOG_SHEET_ID",
+                 "STOPLOG_WATCH_DIR", "STOPLOG_PROVIDER", "GOOGLE_CREDENTIALS_FILE",
+                 "GOOGLE_APPLICATION_CREDENTIALS", "STOPLOG_POLL_SECONDS"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("STOPLOG_ANTHROPIC_API_KEY", "k1")
+    s = Settings.load(cfg, env_file=None)
+    assert s.anthropic_api_key == "k1" and s.resolved_provider() == "anthropic"
+    assert s.sheet_id == "ABC" and s.watch_dir.as_posix() == "C:/photos" and s.poll_seconds == 15
+    assert s.extraction_model() == "claude-haiku-5-5" and s.google_credentials.name == "sa.json"
+    monkeypatch.setenv("STOPLOG_MODEL", "claude-sonnet-5-5")  # environment wins over the YAML
+    assert Settings.load(cfg, env_file=None).extraction_model() == "claude-sonnet-5-5"

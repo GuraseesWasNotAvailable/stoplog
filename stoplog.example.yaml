@@ -1,5 +1,14 @@
 # Plant config. Copy to stoplog.yaml and edit. Every key is optional.
 
+# Non-secret runtime settings (environment variables override these). Keys never go here.
+settings:
+  sheet_id: ""                                  # sheet id or full URL
+  google_credentials_file: service-account.json
+  watch_dir: inbox
+  provider: auto                                # auto | openai | anthropic
+  model: ""                                     # empty = provider default
+  effort: low
+
 shifts:
   - {name: A, start: "06:00", end: "14:00"}
   - {name: B, start: "14:00", end: "22:00"}
