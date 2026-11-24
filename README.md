@@ -54,6 +54,19 @@ stoplog --store csv insights                      # see stoplog-data/insights.cs
 
 ## Google Sheet setup
 
+### Easiest: your own Google account (no Cloud project)
+
+A small Apps Script inside the sheet reads and writes it as you.
+
+1. Open the sheet, then **Extensions > Apps Script**. Replace the code with [`deploy/google-apps-script/stoplog-bridge.gs`](deploy/google-apps-script/stoplog-bridge.gs) and save.
+2. **Deploy > New deployment**, type **Web app**, Execute as **Me**, Who has access **Anyone**, then **Deploy** and authorize (Google shows "unverified app" for your own scripts: Advanced, then Go to the project).
+3. Put the Web app URL (ends in `/exec`) in the environment as `STOPLOG_WEBAPP_URL`, and set `store: webapp` in `stoplog.yaml` (or `STOPLOG_STORE=webapp`).
+4. `stoplog init` creates the tabs.
+
+Treat the web app URL like a password: anyone who has it can read the log and add rows. To revoke it, archive the deployment (Deploy > Manage deployments) and make a new one.
+
+### Alternative: service account
+
 1. Create an empty Google Sheet and copy its URL into `STOPLOG_SHEET_ID` in `.env`.
 2. In Google Cloud Console: create a project, enable the **Google Sheets API**, create a **service account**, and download a JSON key. Save it next to `.env` and set `GOOGLE_CREDENTIALS_FILE`.
 3. Share the sheet with the service account's email (it is in the JSON, `client_email`) as **Editor**.

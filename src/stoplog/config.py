@@ -204,7 +204,8 @@ class Settings:
     image_detail: str = "high"
     google_credentials: Path | None = None
     sheet_id: str | None = None
-    store: str = "gsheet"  # "gsheet" or "csv"
+    webapp_url: str | None = None  # Apps Script bridge; a credential, so environment only
+    store: str = "gsheet"  # "webapp", "gsheet" or "csv"
     csv_dir: Path = Path("stoplog-data")
     watch_dir: Path = Path("inbox")
     state_dir: Path = Path(".stoplog")
@@ -284,6 +285,7 @@ class Settings:
             image_detail=get("STOPLOG_IMAGE_DETAIL", "image_detail", "high"),
             google_credentials=Path(creds) if creds else None,
             sheet_id=_sheet_id(get("STOPLOG_SHEET_ID", "sheet_id")),
+            webapp_url=(env.get("STOPLOG_WEBAPP_URL") or "").strip() or None,
             store=get("STOPLOG_STORE", "store", "gsheet").lower(),
             csv_dir=Path(get("STOPLOG_CSV_DIR", "csv_dir", "stoplog-data")),
             watch_dir=Path(get("STOPLOG_WATCH_DIR", "watch_dir", "inbox")),

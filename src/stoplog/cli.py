@@ -24,7 +24,11 @@ def make_store(settings: Settings):
         from .gsheet import GoogleSheetStore
 
         return GoogleSheetStore(settings.sheet_id or "", settings.google_credentials, settings.state_dir)
-    raise SystemExit(f"STOPLOG_STORE must be 'gsheet' or 'csv', got {settings.store!r}")
+    if settings.store == "webapp":
+        from .webapp import WebAppStore
+
+        return WebAppStore(settings.webapp_url or "")
+    raise SystemExit(f"STOPLOG_STORE must be 'webapp', 'gsheet' or 'csv', got {settings.store!r}")
 
 
 def make_pipeline(settings: Settings, store=None):
@@ -209,7 +213,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="stoplog", description="Photos of line stop sheets -> a live Google Sheet.")
     p.add_argument("--version", action="version", version=f"stoplog {__version__}")
     p.add_argument("--config", help="plant config YAML (default: stoplog.yaml if present)")
-    p.add_argument("--store", choices=["gsheet", "csv"], help="override STOPLOG_STORE")
+    p.add_argument("--store", choices=["webapp", "gsheet", "csv"], help="override STOPLOG_STORE")
     p.add_argument("--csv-dir", help="folder for the CSV store")
     p.add_argument("-v", "--verbose", action="store_true")
     p.add_argument("--log-file", help="also write the log here (rotated at 1 MB)")
