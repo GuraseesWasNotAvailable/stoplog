@@ -186,9 +186,9 @@ class PlantConfig:
 
 
 PROVIDERS = ("openai", "anthropic")
-# Claude default is the small model: on the bundled sample, Haiku 5.5 at low effort read
-# 80/80 fields exactly. Step up (STOPLOG_MODEL=claude-sonnet-5-5, STOPLOG_EFFORT=medium)
-# if real handwriting reads worse.
+# Claude default is the small model at medium effort. On a real handwritten, sideways phone photo,
+# Haiku 5.5 at low effort slipped on 3 fields (overwritten digit, crossed-out initials, an empty
+# cell); medium read them all. Step up to claude-sonnet-5-5 if your handwriting reads worse.
 DEFAULT_MODELS = {"openai": DEFAULT_MODEL, "anthropic": "claude-haiku-5-5"}
 
 
@@ -199,7 +199,7 @@ class Settings:
     anthropic_api_key: str | None = None
     model: str | None = None  # None -> the provider's default
     insights_model: str | None = None  # None -> same as `model`
-    effort: str = "low"  # reading the photo (Claude: low|medium|high|xhigh|max)
+    effort: str = "medium"  # reading the photo (Claude: low|medium|high|xhigh|max)
     insights_effort: str = "low"  # writing the findings
     image_detail: str = "high"
     google_credentials: Path | None = None
@@ -280,7 +280,7 @@ class Settings:
             anthropic_api_key=env.get("STOPLOG_ANTHROPIC_API_KEY") or env.get("ANTHROPIC_API_KEY") or None,
             model=get("STOPLOG_MODEL", "model"),
             insights_model=get("STOPLOG_INSIGHTS_MODEL", "insights_model"),
-            effort=get("STOPLOG_EFFORT", "effort", "low").lower(),
+            effort=get("STOPLOG_EFFORT", "effort", "medium").lower(),
             insights_effort=get("STOPLOG_INSIGHTS_EFFORT", "insights_effort", "low").lower(),
             image_detail=get("STOPLOG_IMAGE_DETAIL", "image_detail", "high"),
             google_credentials=Path(creds) if creds else None,

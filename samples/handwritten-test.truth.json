@@ -1,0 +1,25 @@
+{
+  "note": "Values to hand-write on a printed Line Stop Log, then photograph. Score the read with: python samples/score_read.py read.json samples/handwritten-test.truth.json",
+  "header": {"sheet_date": "2026-11-24", "shift": "A", "line": "Line 2", "sku": "Soap 125g", "incharge": "S. Verma"},
+  "rows": [
+    {"machine": "Wrapper", "start_time": "06:15", "end_time": "06:40", "duration_min": "25", "category_as_written": "CO", "reason_as_written": "startup, film threading", "action_taken": "threaded film", "recorded_by": "SV"},
+    {"machine": "Wrapper", "start_time": "07:05", "end_time": "07:09", "duration_min": "4", "category_as_written": "MS", "reason_as_written": "bar jam at infeed", "action_taken": "cleared", "recorded_by": "SV"},
+    {"machine": "Stamper", "start_time": "07:50", "end_time": "08:32", "duration_min": "42", "category_as_written": "BD", "reason_as_written": "die heater trip", "action_taken": "reset MCB, changed fuse", "recorded_by": "RK"},
+    {"machine": "Wrapper", "start_time": "", "end_time": "", "duration_min": "9", "category_as_written": "MS", "reason_as_written": "film jam x3", "action_taken": "cleared each time", "recorded_by": "SV"},
+    {"machine": "Cartoner", "start_time": "09:20", "end_time": "09:26", "duration_min": "6", "category_as_written": "BD", "reason_as_written": "glue gun not firing", "action_taken": "cleaned nozzle", "recorded_by": "SV"},
+    {"machine": "Line", "start_time": "10:00", "end_time": "10:15", "duration_min": "15", "category_as_written": "PM", "reason_as_written": "tea break", "action_taken": "", "recorded_by": "SV"},
+    {"machine": "Plodder", "start_time": "10:48", "end_time": "11:20", "duration_min": "25", "category_as_written": "MAT", "reason_as_written": "noodles khatam, mixer late", "action_taken": "waited for mixer", "recorded_by": "RK"},
+    {"machine": "Wrapper", "start_time": "12:10", "end_time": "12:18", "duration_min": "8", "category_as_written": "MS", "reason_as_written": "sealing jaw sticking", "action_taken": "cleaned jaw", "recorded_by": "SV"},
+    {"machine": "Conveyor", "start_time": "1:05", "end_time": "1:30", "duration_min": "25", "category_as_written": "BD", "reason_as_written": "belt motor trip", "action_taken": "reset overload", "recorded_by": "RK"},
+    {"machine": "Wrapper", "start_time": "13:40", "end_time": "13:52", "duration_min": "12", "category_as_written": "CO", "reason_as_written": "SKU change 125g to 75g", "action_taken": "", "recorded_by": "SV"}
+  ],
+  "expected_after_normalising": {
+    "events": 12,
+    "row9_start": "13:05 (written 1:05 on the 06:00-14:00 shift)",
+    "row7_review": "written 25 min but 10:48-11:20 is 32 min",
+    "row5_category": "minor_stop (ticked BD, 6 min)",
+    "row4_tally": "3 stops of 3 min",
+    "unplanned_downtime_min": 163,
+    "planned_min": 15
+  }
+}

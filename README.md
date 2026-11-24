@@ -121,7 +121,7 @@ Stop it with `Stop-ScheduledTask -TaskName stoplog`; remove it with `Unregister-
 | `lines`, `machines` | none | Canonical names, used by the reader and to tidy the log |
 | `reason_groups` | packaging-line set | Your cause vocabulary: group name and the ways operators write it |
 
-Provider: set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. Defaults are `gpt-6.2-sol` (OpenAI) and `claude-haiku-5-5` at low effort (Claude), chosen to keep token use small. Override with `STOPLOG_MODEL` and `STOPLOG_EFFORT` (for example `claude-sonnet-5-5` and `medium` if your handwriting reads worse). Larger Claude models also get server-side refusal fallback.
+Provider: set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. Defaults are `gpt-6.2-sol` (OpenAI) and `claude-haiku-5-5` at medium effort (Claude), chosen to keep token use small. Override with `STOPLOG_MODEL` and `STOPLOG_EFFORT` (for example `claude-sonnet-5-5` if your handwriting reads worse). Larger Claude models also get server-side refusal fallback.
 
 ## Commands
 
@@ -145,7 +145,7 @@ Add `--store csv` to any command to use local CSV files instead of Google Sheets
 
 ## Limits
 
-- Measured so far: on the bundled sample (a synthetic photo of the form with handwriting-style text), Claude Haiku 5.5 at low effort read 80 of 80 fields and the header exactly, including the tally row (2026-11-24, two runs). Real operators' handwriting has not been measured yet. Photograph a few of your own filled sheets, write a truth file in the same format, and score them with `python samples/score_read.py read.json truth.json` before trusting the numbers.
+- Measured so far (2026-11-24): on the bundled synthetic sample, Claude Haiku 5.5 at low effort read 80 of 80 fields and the header exactly. On one real hand-filled form, photographed sideways on a phone, low effort slipped on 3 fields (an overwritten digit, crossed-out initials, a blank cell it filled from the next column); medium effort read all of them as written. That is one sheet and one writer, not a benchmark. Photograph a few of your own filled sheets, write a truth file in the same format, and score them with `python samples/score_read.py read.json truth.json` before trusting the numbers.
 - A second photo of the same sheet is deduplicated by date, shift, line, machine, start time and cause. If the model reads a time differently between two photos (14:05 vs 14:06), that stop can appear twice; it shows up in the Photos tab as fewer "already logged" rows than expected.
 - Downtime % assumes every shift that appears in the log ran its full length.
 - Camera captures stay in the inbox folder. At about 0.5 MB each and only changed frames kept, clear old ones every few months on a small SD card.

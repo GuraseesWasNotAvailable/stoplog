@@ -7,7 +7,7 @@ settings:
   watch_dir: inbox
   provider: auto                                # auto | openai | anthropic
   model: ""                                     # empty = provider default
-  effort: low
+  effort: medium
 
 shifts:
   - {name: A, start: "06:00", end: "14:00"}
