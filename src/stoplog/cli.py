@@ -116,6 +116,37 @@ def cmd_process(args) -> int:
     return 1 if failed else 0
 
 
+def cmd_rebuild(args) -> int:
+    """Fill an emptied sheet again: tabs, every photo in the folder, insights."""
+    from .imaging import is_image_file
+    from .pipeline import PhotoFailed
+    from .watcher import _ignored
+
+    s = _settings(args)
+    folder = Path(args.folder) if args.folder else s.watch_dir
+    pipe = make_pipeline(s)
+    pipe.store.ensure_ready()
+    print(f"Tabs ready: {pipe.store.location()}")
+    photos = sorted((p for p in folder.iterdir() if p.is_file() and is_image_file(p) and not _ignored(p)),
+                    key=lambda p: p.stat().st_mtime)
+    added = failed = 0
+    for path in photos:
+        try:
+            r = pipe.process(path, fresh=args.fresh)
+        except PhotoFailed as exc:
+            print(f"{path.name}: FAILED: {exc}")
+            failed += 1
+            continue
+        added += r.stops_added
+        source = "saved read" if any("saved read" in w for w in r.warnings) else "new read"
+        print(f"{path.name}: {r.status} ({source}), {r.stops_added} added, {r.already_logged} already there")
+    facts = pipe.rebuild_insights()
+    t = facts["totals"]
+    print(f"Done: {len(photos)} photo(s), {added} stop(s) added, insights rebuilt "
+          f"({t['stops']} unplanned stops, {t['downtime_min']} min).")
+    return 1 if failed else 0
+
+
 def cmd_watch(args) -> int:
     from .capture import Camera, ChangeDetector
     from .watcher import CaptureLoop, FolderWatcher, run_forever
@@ -240,6 +271,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--no-narrative", action="store_true")
     camera_args(sp)
     sp.set_defaults(fn=cmd_watch)
+
+    sp = sub.add_parser("rebuild", help="refill an emptied sheet: tabs, every photo in the folder, insights")
+    sp.add_argument("--folder", help="photo folder (default STOPLOG_WATCH_DIR)")
+    sp.add_argument("--fresh", action="store_true", help="read every photo again instead of using saved reads")
+    sp.add_argument("--no-narrative", action="store_true")
+    sp.set_defaults(fn=cmd_rebuild)
 
     sp = sub.add_parser("insights", help="rebuild the Insights tab from the Log tab")
     sp.add_argument("--no-narrative", action="store_true")

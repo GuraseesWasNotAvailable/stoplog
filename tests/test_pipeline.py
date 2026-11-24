@@ -94,6 +94,33 @@ def test_unreadable_file(settings, tmp_path):
     assert not exc.value.retryable and llm.calls == []
 
 
+def test_emptied_sheet_is_refilled_from_the_saved_read(settings, tmp_path):
+    """Someone deletes everything in the sheet: tabs come back and the same rows are pasted
+    again from the saved read, with no second model call."""
+    clock = [0.0]
+    llm = FakeLLM(sample_sheet())
+    store = CsvStore(settings.csv_dir)
+    pipe = Pipeline(settings, store, Extractor(llm, settings), monotonic=lambda: clock[0])
+    assert pipe.process(SAMPLE_PHOTO).stops_added == 14
+
+    pipe.store = CsvStore(tmp_path / "emptied")  # the blank sheet
+    assert pipe.process(SAMPLE_PHOTO).status == "already_processed"  # within a minute: cached view
+    clock[0] += 61
+    r = pipe.process(SAMPLE_PHOTO)
+    assert (r.status, r.stops_added) == ("logged", 14)
+    assert "saved read" in r.warnings[-1] and len(llm.calls) == 1
+    assert (tmp_path / "emptied" / "log.csv").exists()  # tabs recreated
+
+
+def test_fresh_ignores_the_saved_read(settings, tmp_path):
+    llm = FakeLLM(sample_sheet(), sample_sheet())
+    pipe = Pipeline(settings, CsvStore(settings.csv_dir), Extractor(llm, settings))
+    pipe.process(SAMPLE_PHOTO)
+    pipe2 = Pipeline(settings, CsvStore(tmp_path / "other"), Extractor(llm, settings))
+    pipe2.process(SAMPLE_PHOTO, fresh=True)
+    assert len(llm.calls) == 2
+
+
 def test_csv_store_rejects_foreign_header(settings):
     settings.csv_dir.mkdir(parents=True)
     (settings.csv_dir / "log.csv").write_text("a,b,c\n", encoding="utf-8")

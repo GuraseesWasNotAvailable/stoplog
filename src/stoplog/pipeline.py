@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import logging
+import os
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Callable
@@ -12,7 +15,7 @@ from .extract import Extractor
 from .imaging import ImageError, file_sha256, prepare_image
 from .insights import build_insights
 from .llm import LLMError
-from .models import PhotoResult
+from .models import ExtractedSheet, PhotoResult
 from .normalize import normalize_sheet
 from .store import Store
 
@@ -25,30 +28,65 @@ class PhotoFailed(Exception):
         self.retryable = retryable
 
 
+REFRESH_SECONDS = 60
+
+
 class Pipeline:
     def __init__(self, settings: Settings, store: Store, extractor: Extractor | None,
-                 narrative_llm=None, clock: Callable[[], datetime] = datetime.now):
+                 narrative_llm=None, clock: Callable[[], datetime] = datetime.now,
+                 monotonic: Callable[[], float] = time.monotonic):
         self.settings = settings
         self.store = store
         self.extractor = extractor
         self.narrative_llm = narrative_llm
         self.clock = clock
+        self.monotonic = monotonic
         self._done_hashes: set[str] | None = None
         self._event_ids: set[str] | None = None
+        self._loaded_at: float | None = None
 
-    # caches are loaded from the store once, then kept in step with our own writes
     def _load_caches(self) -> None:
-        if self._done_hashes is None:
-            self._done_hashes = self.store.processed_photo_hashes()
-        if self._event_ids is None:
-            self._event_ids = self.store.existing_event_ids()
+        """What the sheet already holds. Re-read at most once a minute, so rows or whole tabs
+        that a person deleted or edited are noticed (and deleted tabs recreated)."""
+        now = self.monotonic()
+        if self._loaded_at is not None and now - self._loaded_at < REFRESH_SECONDS:
+            return
+        self.store.ensure_ready()
+        self._done_hashes = self.store.processed_photo_hashes()
+        self._event_ids = self.store.existing_event_ids()
+        self._loaded_at = now
 
     def is_done(self, sha: str) -> bool:
         self._load_caches()
         return sha in self._done_hashes  # type: ignore[operator]
 
-    def process(self, path: str | Path, sha: str | None = None) -> PhotoResult:
-        """Read one photo into the sheet. Raises PhotoFailed on errors worth retrying or reporting."""
+    # Each photo's read is kept locally by content hash, so re-filling an emptied sheet
+    # pastes back exactly the same rows without paying for (or re-rolling) another read.
+    def _read_cache(self, sha: str) -> Path:
+        return Path(self.settings.state_dir) / "reads" / f"{sha}.json"
+
+    def _cached_read(self, sha: str) -> tuple[ExtractedSheet, str] | None:
+        path = self._read_cache(sha)
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return ExtractedSheet.model_validate(data["sheet"]), data.get("model", "")
+        except (OSError, ValueError, KeyError):
+            return None
+
+    def _save_read(self, sha: str, sheet: ExtractedSheet, model: str) -> None:
+        path = self._read_cache(sha)
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"model": model, "sheet": sheet.model_dump()}, ensure_ascii=False),
+                           encoding="utf-8")
+            os.replace(tmp, path)
+        except OSError:
+            log.warning("could not save the read of %s", sha[:12])
+
+    def process(self, path: str | Path, sha: str | None = None, fresh: bool = False) -> PhotoResult:
+        """Read one photo into the sheet. Raises PhotoFailed on errors worth retrying or reporting.
+        `fresh` ignores a saved read and asks the model again."""
         path = Path(path)
         self._load_caches()
         sha = sha or file_sha256(path)
@@ -57,7 +95,8 @@ class Pipeline:
                              processed_at=now.isoformat(timespec="seconds"))
         if sha in self._done_hashes:  # type: ignore[operator]
             return result
-        if self.extractor is None:
+        cached = None if fresh else self._cached_read(sha)
+        if cached is None and self.extractor is None:
             raise PhotoFailed("no extractor configured (set an LLM API key)", retryable=False)
 
         try:
@@ -66,13 +105,18 @@ class Pipeline:
             self._record_failure(result, str(exc))
             raise PhotoFailed(str(exc), retryable=False) from exc
 
-        try:
-            sheet = self.extractor.extract(image, path.name)
-        except LLMError as exc:
-            if not exc.retryable:
-                self._record_failure(result, str(exc))
-            raise PhotoFailed(str(exc), retryable=exc.retryable) from exc
-        result.model = self.extractor.model
+        if cached is not None:
+            sheet, result.model = cached
+            result.warnings.append("used the saved read of this photo (no new model call)")
+        else:
+            try:
+                sheet = self.extractor.extract(image, path.name)  # type: ignore[union-attr]
+            except LLMError as exc:
+                if not exc.retryable:
+                    self._record_failure(result, str(exc))
+                raise PhotoFailed(str(exc), retryable=exc.retryable) from exc
+            result.model = self.extractor.model  # type: ignore[union-attr]
+            self._save_read(sha, sheet, result.model)
 
         if not sheet.is_loss_sheet:
             result.status = "not_a_sheet"

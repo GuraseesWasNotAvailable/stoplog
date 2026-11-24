@@ -132,6 +132,7 @@ Provider: set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`. Defaults are `gpt-6.2-sol
 | `stoplog process FILE...` | Read photos now |
 | `stoplog extract FILE` | Print what a photo would add; writes nothing |
 | `stoplog insights` | Rebuild the Insights tab from the Log tab |
+| `stoplog rebuild [--fresh]` | Refill an emptied sheet: recreate the tabs, paste every photo in the folder again (from each photo's saved read, no new model call unless `--fresh`), rebuild insights |
 | `stoplog print-form OUT.pdf` | Write the printable Line Stop Log |
 | `stoplog capture-test` | Take one photo to check camera framing |
 
