@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 
 class ExtractedStop(BaseModel):
+    row_number: Optional[int] = Field(description="The printed row number in the No. column, or null if none.")
     machine: Optional[str] = Field(description="Machine or station as written, e.g. 'Wrapper', 'Stamper'.")
     start_time: Optional[str] = Field(description="When the stop began, 'HH:MM'. Apply AM/PM if written.")
     end_time: Optional[str] = Field(description="When the line restarted, 'HH:MM'. Apply AM/PM if written.")
@@ -35,6 +36,7 @@ class ExtractedSheet(BaseModel):
     sheet_date_as_written: Optional[str] = Field(description="The date exactly as written, or null.")
     shift: Optional[str] = Field(description="Shift as written, e.g. 'B', 'II', 'Night'.")
     line: Optional[str] = Field(description="Line as written, e.g. 'Line 3', 'L-3'.")
+    page: Optional[int] = Field(description="Page number from the header if written (second sheet of a shift), else null.")
     sku: Optional[str] = Field(description="Product/SKU running, if the sheet header names one.")
     stops: list[ExtractedStop]
     unreadable: list[str] = Field(description="Anything on the sheet that could not be read or is cut off.")

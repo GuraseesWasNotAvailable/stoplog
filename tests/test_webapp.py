@@ -64,7 +64,7 @@ def test_pipeline_through_the_real_apps_script(settings, tmp_path, bridge):
     assert store.location().endswith("/TEST/edit")
 
     later = sample_sheet()
-    later.stops.append(stop("Cutter", "21:40", "21:52", 12, "BD", "=HYPERLINK(\"x\")", "cutter fault"))
+    later.stops.append(stop("Cutter", "21:40", "21:52", 12, "BD", "=HYPERLINK(\"x\")", "cutter fault", row=11))
     pipe = Pipeline(settings, store, Extractor(FakeLLM(sample_sheet(), later), settings),
                     clock=lambda: datetime(2026, 11, 24, 22, 10))
     assert pipe.process(SAMPLE_PHOTO).stops_added == 14

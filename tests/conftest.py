@@ -14,10 +14,10 @@ from stoplog.models import ExtractedSheet, ExtractedStop  # noqa: E402
 SAMPLE_PHOTO = ROOT / "samples" / "line3-shiftB.jpg"
 
 
-def stop(machine, start, end, minutes, code, reason, group, action="", by="RK", occurrences=1,
+def stop(machine, start, end, minutes, code, reason, group, action="", by="RK", occurrences=1, row=None,
          confidence="high", note=None, english=None):
     return ExtractedStop(
-        machine=machine, start_time=start, end_time=end, duration_min=minutes, occurrences=occurrences,
+        row_number=row, machine=machine, start_time=start, end_time=end, duration_min=minutes, occurrences=occurrences,
         category_as_written=code, reason_as_written=reason, reason_english=english or reason,
         reason_group=group, action_taken=action or None, sku=None, recorded_by=by,
         confidence=confidence, note=note,
@@ -25,9 +25,9 @@ def stop(machine, start, end, minutes, code, reason, group, action="", by="RK", 
 
 
 def sample_sheet() -> ExtractedSheet:
-    """What a perfect read of samples/line3-shiftB.jpg returns."""
-    return ExtractedSheet(
-        is_loss_sheet=True, sheet_date="2026-11-24", sheet_date_as_written="24/11/2026", shift="B",
+    """What a perfect read of samples/line3-shiftB.jpg returns (rows numbered 1-10, as printed)."""
+    sheet = ExtractedSheet(
+        is_loss_sheet=True, sheet_date="2026-11-24", sheet_date_as_written="24/11/2026", shift="B", page=None,
         line="Line 3", sku="Soap 100g",
         stops=[
             stop("Wrapper", "14:20", "14:26", 6, "MS", "film jam at sealing jaw", "film jam", "cleared film"),
@@ -45,6 +45,9 @@ def sample_sheet() -> ExtractedSheet:
         ],
         unreadable=[],
     )
+    for i, s in enumerate(sheet.stops, 1):
+        s.row_number = i
+    return sheet
 
 
 class FakeLLM:

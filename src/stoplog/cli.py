@@ -272,8 +272,11 @@ def main(argv: list[str] | None = None) -> int:
         handlers.append(RotatingFileHandler(args.log_file, maxBytes=1_000_000, backupCount=3, encoding="utf-8"))
     if sys.stderr is not None:
         handlers.append(logging.StreamHandler())
+    # force=True: an import may already have configured the root logger, which would make
+    # basicConfig a silent no-op and leave the log file empty under pythonw.
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, handlers=handlers or None,
-                        format="%(asctime)s %(levelname)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+                        format="%(asctime)s %(levelname)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
+                        force=True)
     for noisy in ("httpx", "httpx2", "openai", "anthropic", "urllib3", "google"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
     try:

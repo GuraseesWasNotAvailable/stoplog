@@ -426,10 +426,11 @@ def render_grid(facts: dict, insights: list[Insight], note: str, updated: dateti
     add()
 
     add(["What the data says"], "section")
-    if insights:
-        add(["#", "Finding", "Suggested next step"], "header")
-        for i, ins in enumerate(insights, 1):
-            add([i, ins.finding, ins.action])
+    # One sentence per row in column A, nothing to its right, so the text spills across the
+    # empty cells and stays readable at any column width.
+    for i, ins in enumerate(insights, 1):
+        add([f"{i}. {ins.finding}"])
+        add([f"     Next step: {ins.action}"])
     if note:
         add([note])
     add()

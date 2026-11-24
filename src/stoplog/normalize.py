@@ -245,6 +245,10 @@ def _fmt_num(x: float) -> str:
     return str(int(x)) if float(x).is_integer() else f"{x:.1f}"
 
 
+def _machine_key(machine: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", (machine or "").lower())
+
+
 def event_id(*parts: object) -> str:
     key = "|".join("" if p is None else str(p).strip().lower() for p in parts)
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
@@ -301,25 +305,35 @@ def normalize_sheet(
         warnings.append("line not written on sheet")
 
     shift_name = shift.name if shift else (sheet.shift or "").strip()
+    page = sheet.page if sheet.page and sheet.page > 0 else 1
     logged_at = now.isoformat(timespec="seconds")
     events: list[StopEvent] = []
     seen_untimed: dict[tuple, int] = {}
+    seen_rows: set[int] = set()
 
     for stop in sheet.stops:
         count = max(1, int(stop.occurrences or 1))
+        row_no = stop.row_number if stop.row_number and stop.row_number > 0 else None
+        if row_no is not None and row_no in seen_rows:
+            warnings.append(f"row number {row_no} read twice; second one keyed by its content")
+            row_no = None
+        if row_no is not None:
+            seen_rows.add(row_no)
         for k in range(count):
             ev = _normalize_stop(
                 stop, plant, shift, shift_name, sheet_date, line, sheet.sku,
                 tally=count, photo_name=photo_name, photo_sha=photo_sha,
                 logged_at=logged_at, date_from_photo=date_from_photo,
             )
-            # Fingerprint: the same stop read from two photos of the same sheet gets the
-            # same id, so it is logged once. Untimed rows (tallies of minor stops) are told
-            # apart by their order of appearance.
-            if ev.start:
-                ev.event_id = event_id(ev.shift_date, ev.shift, ev.line, ev.machine, ev.start, ev.reason_group)
-            else:
-                key = (ev.shift_date, ev.shift, ev.line, ev.machine, ev.reason_group, ev.duration_min)
+            # Fingerprint, so the same stop seen in two photos of one sheet is logged once.
+            # Never built from model-written text (the cause label can be worded differently
+            # on every read). Best key: the printed row number on the sheet.
+            if row_no is not None:
+                ev.event_id = event_id(ev.shift_date, ev.shift, ev.line, f"p{page}", f"r{row_no}", f"#{k}")
+            elif ev.start:
+                ev.event_id = event_id(ev.shift_date, ev.shift, ev.line, _machine_key(ev.machine), ev.start, f"#{k}")
+            else:  # untimed rows (tallies) are told apart by their order of appearance
+                key = (ev.shift_date, ev.shift, ev.line, _machine_key(ev.machine), ev.duration_min)
                 n = seen_untimed.get(key, 0)
                 seen_untimed[key] = n + 1
                 ev.event_id = event_id(*key, f"#{n}")

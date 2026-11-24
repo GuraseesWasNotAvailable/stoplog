@@ -89,8 +89,46 @@ def test_same_sheet_twice_gives_same_ids(plant):
     assert [e.event_id for e in a.events] == [e.event_id for e in b.events]
 
 
+def test_reread_with_different_wording_or_misread_is_still_the_same_stop(plant):
+    """Regression (2026-11-24): a second read of the same sheet worded causes differently
+    ("tea break" vs "planned break") and misread 13:40 as 13:10, which made duplicates."""
+    first = normalize_sheet(sample_sheet(), plant, photo_name="a", photo_sha="1", photo_time=None)
+    again = sample_sheet()
+    again.stops[5].reason_group = "planned break"
+    again.stops[8].start_time, again.stops[8].duration_min = "20:10", 42
+    second = normalize_sheet(again, plant, photo_name="b", photo_sha="2", photo_time=None)
+    assert [e.event_id for e in first.events] == [e.event_id for e in second.events]
+
+
+def test_page_two_of_a_shift_is_not_mistaken_for_page_one(plant):
+    p1 = normalize_sheet(sample_sheet(), plant, photo_name="a", photo_sha="1", photo_time=None)
+    two = sample_sheet()
+    two.page = 2
+    p2 = normalize_sheet(two, plant, photo_name="b", photo_sha="2", photo_time=None)
+    assert not {e.event_id for e in p1.events} & {e.event_id for e in p2.events}
+
+
+def test_without_row_numbers_the_key_ignores_cause_wording(plant):
+    sheet = sample_sheet()
+    for s in sheet.stops:
+        s.row_number = None
+    a = normalize_sheet(sheet, plant, photo_name="a", photo_sha="1", photo_time=None)
+    sheet.stops[0].reason_group = "film stuck at jaw"
+    b = normalize_sheet(sheet, plant, photo_name="b", photo_sha="2", photo_time=None)
+    assert [e.event_id for e in a.events] == [e.event_id for e in b.events]
+    assert len({e.event_id for e in a.events}) == 14
+
+
+def test_repeated_row_number_does_not_swallow_a_stop(plant):
+    sheet = sample_sheet()
+    sheet.stops[2].row_number = 2  # model read "3" as "2"
+    norm = normalize_sheet(sheet, plant, photo_name="a", photo_sha="1", photo_time=None)
+    assert len({e.event_id for e in norm.events}) == 14
+    assert any("row number 2 read twice" in w for w in norm.warnings)
+
+
 def test_night_shift_after_midnight_is_next_calendar_day(plant):
-    sheet = ExtractedSheet(is_loss_sheet=True, sheet_date="2026-11-24", sheet_date_as_written=None, shift="C",
+    sheet = ExtractedSheet(page=None, is_loss_sheet=True, sheet_date="2026-11-24", sheet_date_as_written=None, shift="C",
                            line="1", sku=None, unreadable=[],
                            stops=[stop("Wrapper", "23:50", "00:10", 20, "BD", "jam", "wrapper jam"),
                                   stop("Wrapper", "01:30", "01:34", 4, "MS", "jam", "wrapper jam")])
@@ -100,7 +138,7 @@ def test_night_shift_after_midnight_is_next_calendar_day(plant):
 
 
 def test_missing_date_uses_photo_time_and_night_shift_rolls_back(plant):
-    sheet = ExtractedSheet(is_loss_sheet=True, sheet_date=None, sheet_date_as_written=None, shift="C",
+    sheet = ExtractedSheet(page=None, is_loss_sheet=True, sheet_date=None, sheet_date_as_written=None, shift="C",
                            line="1", sku=None, unreadable=["bottom edge cut off"],
                            stops=[stop("Wrapper", "02:00", "02:05", 5, "MS", "jam", "wrapper jam")])
     norm = normalize_sheet(sheet, plant, photo_name="p", photo_sha="s", photo_time=datetime(2026, 11, 25, 5, 40))
@@ -110,7 +148,7 @@ def test_missing_date_uses_photo_time_and_night_shift_rolls_back(plant):
 
 
 def test_shift_inferred_from_times_when_not_written(plant):
-    sheet = ExtractedSheet(is_loss_sheet=True, sheet_date="2026-11-24", sheet_date_as_written=None, shift=None,
+    sheet = ExtractedSheet(page=None, is_loss_sheet=True, sheet_date="2026-11-24", sheet_date_as_written=None, shift=None,
                            line=None, sku=None, unreadable=[],
                            stops=[stop("Wrapper", "07:15", "07:30", 15, None, "jam", "wrapper jam")])
     norm = normalize_sheet(sheet, plant, photo_name="p", photo_sha="s", photo_time=None)
@@ -120,7 +158,7 @@ def test_shift_inferred_from_times_when_not_written(plant):
 
 
 def test_low_confidence_and_missing_values_are_flagged(plant):
-    sheet = ExtractedSheet(is_loss_sheet=True, sheet_date="2026-11-24", sheet_date_as_written=None, shift="A",
+    sheet = ExtractedSheet(page=None, is_loss_sheet=True, sheet_date="2026-11-24", sheet_date_as_written=None, shift="A",
                            line="1", sku=None, unreadable=[],
                            stops=[stop("Wrapper", "0?:15", None, None, None, None, None,
                                        confidence="low", note="time smudged")])

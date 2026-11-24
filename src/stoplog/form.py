@@ -84,8 +84,8 @@ def render_form(plant: PlantConfig | None = None, dpi: int = 200) -> tuple[Image
 
     # header fields
     y0, hh = m + px(15), px(13)
-    specs = [("date", "Date (DD/MM/YYYY)", 0.18), ("shift", "Shift (circle one)", 0.2), ("line", "Line", 0.12),
-             ("sku", "Product / SKU", 0.25), ("incharge", "Shift in-charge", 0.25)]
+    specs = [("date", "Date (DD/MM/YYYY)", 0.17), ("shift", "Shift (circle one)", 0.19), ("line", "Line", 0.12),
+             ("page", "Page", 0.07), ("sku", "Product / SKU", 0.21), ("incharge", "Shift in-charge", 0.24)]
     x = m
     usable = W - 2 * m
     for key, label, frac in specs:

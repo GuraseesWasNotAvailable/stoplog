@@ -15,7 +15,7 @@ downtime logs or breakdown registers) from factory floors. Each row records one 
 the machine, when it stopped and restarted, how many minutes, a type code, the reason, the \
 action taken and the initials of whoever wrote it.
 
-The usual form is the "Line Stop Log". Header: Date, Shift (circled letter), Line, \
+The usual form is the "Line Stop Log". Header: Date, Shift (circled letter), Line, Page, \
 Product/SKU, Shift in-charge. Columns, left to right: No. | Machine | Stop time | Restart \
 time | Minutes | Type | Reason (what happened) | Action taken | Initials. A legend of type \
 codes is printed at the bottom. Other layouts and blank paper also occur; read whatever \
@@ -26,7 +26,8 @@ Rules:
 is blank, missing or unreadable, return null, lower `confidence`, and say what is unclear \
 in `note`.
 - One entry in `stops` per filled row, top to bottom. Skip printed headers, the legend, \
-totals, signatures, crossed-out rows and empty rows.
+totals, signatures, crossed-out rows and empty rows. row_number: the number printed in \
+the No. column for that row. page: the header's Page number, if written.
 - Times: "HH:MM". If AM/PM is written, apply it and return 24-hour time. If not, return the \
 digits as written (e.g. "2:40" -> "02:40"); shift timing is applied later.
 - duration_min: the Minutes column for that row as a number ("1 hr 10" -> 70). Null if \

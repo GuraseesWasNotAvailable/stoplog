@@ -47,7 +47,7 @@ def test_same_file_is_not_read_twice(settings):
 
 def test_second_photo_of_same_sheet_only_adds_new_rows(settings, tmp_path):
     later = sample_sheet()
-    later.stops.append(stop("Cutter", "21:40", "21:52", 12, "BD", "blade blunt", "cutter fault"))
+    later.stops.append(stop("Cutter", "21:40", "21:52", 12, "BD", "blade blunt", "cutter fault", row=11))
     pipe, store, _ = make(settings, sample_sheet(), later)
     pipe.process(SAMPLE_PHOTO)
     second = tmp_path / "second.jpg"
@@ -58,7 +58,7 @@ def test_second_photo_of_same_sheet_only_adds_new_rows(settings, tmp_path):
 
 
 def test_not_a_sheet(settings):
-    junk = ExtractedSheet(is_loss_sheet=False, sheet_date=None, sheet_date_as_written=None, shift=None,
+    junk = ExtractedSheet(page=None, is_loss_sheet=False, sheet_date=None, sheet_date_as_written=None, shift=None,
                           line=None, sku=None, stops=[], unreadable=[])
     pipe, store, _ = make(settings, junk)
     assert pipe.process(SAMPLE_PHOTO).status == "not_a_sheet"
